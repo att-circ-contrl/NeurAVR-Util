@@ -1,0 +1,137 @@
+(script)  tabular-lib.pl
+Attention Circuits Control Laboratory - Tabular data helper scripts
+Helper library for dealing with tabular and CSV data.
+Written by Christopher Thomas.
+Copyright (c) 2020 by Vanderbilt University. This work is licensed under
+the Creative Commons Attribution-ShareAlike 4.0 International License.
+
+
+(sub)  TAB_ApplyFunction_Series
+This applies a transformation function to an array of values.
+Arg 0 points to the input data series.
+Arg 1 points to the function to apply (taking one arg, returning one value).
+Returns a pointer to a new data series with the transformation applied.
+
+
+(sub)  TAB_ApplyFunction_Table
+This applies a transformation function to some or all columns in a table.
+Arg 0 points to the input data table.
+Arg 1 points to the function to apply (taking one arg, returning one value).
+Arg 2 points to an array of column labels, or undef to modify all columns.
+Returns a pointer to a new data table with scaling and offset applied.
+All columns are copied, but only the specified columns are modified.
+
+
+(sub)  TAB_ApplyGainOffset_Series
+This applies a gain and offset to an array of values.
+Arg 0 points to the input data series.
+Arg 1 is an offset to apply before scaling.
+Arg 2 is a scale factor to apply.
+Arg 3 is an offset to apply after scaling.
+Returns a pointer to a new data series with scaling and offset applied.
+
+
+(sub)  TAB_ApplyGainOffset_Table
+This applies a gain and offset to some or all columns in a data table.
+Arg 0 points to the input data table.
+Arg 1 is an offset to apply before scaling.
+Arg 2 is a scale factor to apply.
+Arg 3 is an offset to apply after scaling.
+Arg 4 points to an array of column labels, or undef to modify all columns.
+Returns a pointer to a new data table with scaling and offset applied.
+All columns are copied, but only the specified columns are modified.
+
+
+(sub)  TAB_UInt16ToSigned
+This converts an unsigned 16-bit value to a signed integer value in the
+range -32k..+32k. Floating-point values are truncated; values outside the
+range 0..64k are mapped to values in range.
+This is suitable for passing to TAB_ApplyFunction_.
+Arg 0 is the unsigned 16-bit value to convert.
+Returns a signed integer value.
+
+
+(sub)  TAB_SignedToUInt16
+This converts a signed integer in the range -32k..+32k to an unsigned
+16-bit value. Floating-point values are truncated; values outside the range
+-32k..+32k are mapped to values in range.
+This is suitable for passing to TAB_ApplyFunction_.
+Arg 0 is the signed 16-bit value to convert.
+Returns an unsigned integer value.
+
+
+(sub)  TAB_UInt32ToSigned
+This converts an unsigned 32-bit value to a signed integer value in the
+range -2G..+2G. Floating-point values are truncated; values outside the
+range 0..4G are mapped to values in range.
+This is suitable for passing to TAB_ApplyFunction_.
+Arg 0 is the unsigned 32-bit value to convert.
+Returns a signed integer value.
+
+
+(sub)  TAB_SignedToUInt32
+This converts a signed integer in the range -2G..+2G to an unsigned
+32-bit value. Floating-point values are truncated; values outside the range
+-2G..+2G are mapped to values in range.
+This is suitable for passing to TAB_ApplyFunction_.
+Arg 0 is the signed 32-bit value to convert.
+Returns an unsigned integer value.
+
+
+(sub)  TAB_RoundFloat
+This rounds a floating-point value to the nearest integer value.
+This is suitable for passing to TAB_ApplyFunction_.
+NOTE - This shouldn't usually be needed.
+Arg 0 is the value to round.
+Returns an integer value.
+
+
+(sub)  TAB_WriteCSVFile
+This writes tabular data to a CSV file.
+Only the specified columns are written, in the order specified. If the
+column label list is undef, all columns are written in arbitrary order.
+Arg 0 is the name of the file to write to.
+Arg 1 points to an array of labels indicating columns to write, in order.
+Arg 2 points to a hash of column data series, indexed by label.
+No return value.
+
+
+(sub)  TAB_ReadCSVFile
+This reads tabular data from a CSV file.
+Each column is assumed to begin with a label string. The series are
+returned as a pointer to a hash of arrays, containing data series indexed
+by label. A pointer to an array containing an ordered list of labels is
+also returned.
+Behavior with sparse data (missing cells, rows, or columns) is undefined.
+Arg 0 is the name of the file to read from.
+Returns (labels, series_hash).
+
+
+(sub)  TAB_TableAddChildAsAggregate
+This adds a child tabular data hash into a parent tabular data hash.
+A single line is added to the parent, representing aggregate values from
+the child. For each column in the child, row values are either summed or
+averaged to get the aggregate value for that column.
+A "label" column in the parent records a label associated with each child.
+Any "label" column in the child is discarded, as a special case.
+Arg 0 points to the parent tabular data hash to merge with, which may be
+an empty hash.
+Arg 1 is a label to associate with this child's aggregate data.
+Arg 2 points to the child tabular data hash to add.
+Arg 3 is an aggregation method ('sum', 'mean').
+No return value.
+
+
+(sub)  TAB_TableAddRow
+This adds one row of tabular data into a parent tabular data hash.
+The row data consists of a hash of scalar values (i.e. it is not itself
+a tabular data hash).
+If a "label" argument is provided, the "label" field in this row of data
+set to the specified value (overwriting any such value from the added row).
+Behavior with sparse data (missing cells, rows, or columns) is undefined.
+Arg 0 points to the parent tabular data hash to add to, which may be
+an empty hash.
+Arg 1 points to a hash containing data values for the row to be added.
+Arg 2 is a label to associate with the new row, or undef for no label.
+No return value.
+

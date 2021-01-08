@@ -1,0 +1,145 @@
+(script)  neuroclient-lib.pl
+Attention Circuits Control Laboratory - NeurAVR helper scripts
+Helper library for talking to Womelsdorf lab "neurapp" based devices.
+Written by Christopher Thomas.
+Copyright (c) 2020 by Vanderbilt University. This work is licensed under
+the Creative Commons Attribution-ShareAlike 4.0 International License.
+
+
+(var)  $NCLI_command_delay_ms, $NCLI_serious_delay_ms
+Various padding latencies.
+
+
+(var)  $NCLI_echo_commands
+Various tattle flags.
+
+
+(var)  $NCLI_read_debug_tattle
+Various diagnostic tattles.
+
+
+(sub)  NCLI_NewTattleState
+This initializes a user-defined tattletale's state.
+Arg 0 is the base output filename to write tattletales to, or undef
+to suppress output.
+Arg 1 is the initial output counter value.
+Returns a pointer to a hash containing tattle state.
+
+
+(sub)  NCLI_SetTattleState
+This modifies a user-defined tattletale's state.
+Arg 0 points to the tattle state hash to modify.
+Arg 1 is the base output filename to write tattletales to, or undef
+to suppress output.
+Arg 2 is the new output counter value, or undef to keep the old count.
+No return value.
+
+
+(sub)  NCLI_GetTattleFilename
+This returns the next tattletale filename in sequence, or undef if
+tattletales are suppressed. State is then updated.
+Arg 0 points to a tattletale state hash.
+Returns a filename, or undef if suppressed.
+
+
+(sub)  NCLI_WriteToTattle
+This saves text to the next tattle file in sequence, if the tattle is
+defined and enabled.
+Arg 0 is the tattle to write to (may be undef).
+Arg 1 is the string to write.
+No return value.
+
+
+(sub)  NCLI_ReadPendingText
+This reads the text emitted in response to previous commands.
+With MT/nonblocking handles, it reads until no more text is present.
+With blocking handles, it pauses, emits an "IDQ" command, and then reads
+until it sees the identity string.
+The text is returned and optionally also written to a file.
+Arg 0 is a communications handle.
+Arg 1 (optional) is a delay in milliseconds (default one millisecond).
+Returns the text read, including the "IDQ" output if any.
+
+
+(sub)  NCLI_SetReadTattle
+This sets flags indicating whether or not to tattle "NCLI_Read" operations.
+Arg 0 is the base filename for output tattling, or undef for no tattling.
+Arg 1 is the new value for the tattle count, or undef to keep the old count.
+No return value.
+
+
+(sub)  NCLI_ReadUntilPattern_Seriously
+This does a brute force "read until you see this pattern", with retries,
+using a keepalive command. The default delay is used.
+Arg 0 is a communications handle.
+Arg 1 is the pattern to look for.
+Returns all text received (concatenated results of each attempt).
+
+
+(sub)  NCLI_SaveText
+This writes the specified text to a file with the specified name.
+A progress message is also printed.
+Arg 0 is the filename to write to.
+Arg 1 is the text to write.
+No return value.
+
+
+(sub)  NCLI_SendCommand
+This waits briefly, then transmits a string to the serial device. The string
+is optionally echoed to STDOUT and optionally logged to a file.
+Arg 0 is a communications handle.
+Arg 1 is the string to send.
+No return value.
+
+
+(sub)  NCLI_SendCommandList
+This sends a list of commands to the Burst Box.
+Commands are newline-delimited. Anything after a # is a comment.
+Lines without text (after comments are stripped) are suppressed.
+Arg 0 is the communications handle.
+Arg 1 is a string containing commands.
+No return value.
+
+
+(sub)  NCLI_SetCommandDelay
+This sets the command transmission delay for NCLI_SendCommand().
+Arg 0 is the new delay in milliseconds.
+No return value.
+
+
+(sub)  NCLI_SetCommandEcho
+This sets the command echo flag for NCLI_SendCommand().
+Arg 0 is the new flag state (1 = echo, 0 = no echo).
+No return value.
+
+
+(sub)  NCLI_QueryApp_Seriously
+This sends a command, tries very hard to find the desired response,
+and complains if it doesn't find the response. This is a pattern we use
+a lot for reading configuration and buffer information.
+Two result strings are generated - one containing all text received, and
+another containing only the text from command to pattern (inclusive).
+NOTE - The "command" text is only present if command echoing is on!
+Arg 0 is the communications handle.
+Arg 1 is the command to issue.
+Arg 2 is the pattern to look for.
+Arg 3 is the error message to send on failure (undef for none).
+Arg 4 is a tattle to write returned text to (undef for none).
+Returns (all text, bracketed text). Bracketed is undef on match failure.
+
+
+(sub)  NCLI_SetQueryDelay
+This sets the command transmission delay for NCLI_QueryApp_Seriously().
+Arg 0 is the new delay in milliseconds.
+No return value.
+
+
+(sub)  NCLI_ConnectToNeurAVR
+This connects to a NeurAVR device, using reasonable default settings.
+Arg 0 is a serial device name (for a serial connection), undef to
+use the first detected serial device, or an emulator filename.
+Arg 1 is a baud rate (for a serial connection) or 'emulated' for emulation.
+Arg 2 is a string containing zero or more newline-delimited startup commands.
+Arg 3 is a string containing a reporting name for this device (may be undef).
+Returns a communications handle.
+

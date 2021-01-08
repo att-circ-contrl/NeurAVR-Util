@@ -1,0 +1,203 @@
+(script)  ardclient-lib-mt.pl
+Attention Circuits Control Laboratory - NeurAVR helper scripts
+Arduino communications library.
+This program talks to an Arduino (or compatible serial device), handling
+connection and low-level communication.
+Written by Christopher Thomas.
+Copyright (c) 2020 by Vanderbilt University. This work is licensed under
+the Creative Commons Attribution-ShareAlike 4.0 International License.
+
+
+(var)  $ACLI_throttle_micros
+Throttle interval for serial writes.
+If zero, no throttling is performed.
+
+
+(var)  $ACLI_wait_timeout_secs, $ACLI_wait_timeout_message
+Timeout for pattern-waiting, in seconds.
+If zero, this will wait forever.
+
+
+(var)  $ACLI_io_uses_syscalls, $ACLI_relay_uses_syscalls
+Implementation switches.
+
+
+(var)  $ACLI_tattle, $ACLI_tattle_verbose
+Tattle switches.
+
+
+(var)  $ACLI_tattle_ridiculous, $ACLI_tattle_fhcanread
+
+
+(var)  $ACLI_tattle_from_ard
+
+
+(var)  $ACLI_tattle_until_pattern
+
+
+(sub)  ACLI_Yield
+Forces a yield.
+FIXME - This deliberately has nonzero delay!
+We're getting CPU hogging with zero delay.
+No arguments.
+No return value.
+
+
+(sub)  ACLI_GetNewPipe
+This returns both ends of an anonymous pipe for inter-process
+communication. Auto-flush is enabled for both ends.
+FIXME - This still seems to use line-based buffering.
+No arguments.
+Returns (reader, writer).
+
+
+(sub)  ACLI_FilehandleCanRead
+Does a non-blocking check to see if a filehandle can be read from.
+Arg 0 is the file handle to test.
+Returns 1 if the file handle can be read from now and 0 otherwise.
+
+
+(sub)  ACLI_SysReadFromFilehandle
+Reads all pending data from a filehandle using sysread().
+This is either raw or line-based. Raw is non-blocking, while line-based
+spins until it sees \r or \n.
+Arg 0 is the filehandle to read.
+Arg 1 is 0 for raw and 1 for line-based.
+Returns a string containing all bytes read (possibly an empty string).
+
+
+(sub)  ACLI_SetUpCommHandle
+Initializes a communicatons handle hash and starts up a buffering thread.
+Arg 0 is the "read" filehandle for the conenction we're wrapping.
+Arg 1 is the "write" filehandle for the connection we're wrapping.
+Arg 2 points to a list of PIDs associated with this connection.
+Returns a communications handle (hash pointer).
+
+
+(sub)  ACLI_HandleCanRead
+Does a non-blocking check to see if a handle hash can be read from.
+This queries the buffer thread to ask if there's pending data.
+Arg 0 is the handle to test.
+Returns 1 if the handle can be read from now and 0 otherwise.
+
+
+(sub)  ACLI_HandleTryRead
+Does a non-blocking read from the specified handle.
+Arg 0 is the handle to test.
+Returns the line read, if present, or undef if no line was available.
+
+
+(sub)  ACLI_ReadPendingText
+Polls the serial port, returning all already-buffered data.
+Arg 0 is the device handle to read from.
+Returns previously-buffered text (possibly an empty string).
+
+
+(sub)  ACLI_ReadSerialUntilTime
+Polls the serial port, reading data until the specified time().
+This works with or without traffic.
+Arg 0 is the device handle to read from.
+Arg 1 is the timestamp to terminate at.
+Returns a string containing the characters read.
+
+
+(sub)  ACLI_SetTimeout
+Sets the default timeout for "ReadSerialUntilFoo()".
+Set this to zero to wait forever (or until an explicitly specified time).
+If a timeout occurs, a message is displayed to STDOUT (if defined).
+Set the message to undef to suppress reporting.
+Arg 0 is the desired timeout in seconds.
+Arg 1 (optional) is a message to display when a timeout occurs.
+No return value.
+
+
+(sub)  ACLI_QueryTimeout
+Queries the default timeout for "ReadSerialUntilFoo()".
+No arguments.
+Returns the default timeout in seconds (0 for "wait forever").
+
+
+(sub)  ACLI_QueryTimeoutMessage
+Queries the default timeout reporting message for "ReadSerialUntilFoo()".
+No arguments.
+Returns the message if set, and "undef" if no message is set.
+
+
+(sub)  ACLI_ReadSerialUntilPattern
+Polls the serial port, reading data until the specified text occurs.
+This looks for m/$pattern/msi (case insensitive and spanning lines).
+NOTE - Without an end time, this will happily wait forever.
+A global default timeout can also be set.
+Arg 0 is the device handle to read from.
+Arg 1 is the regex to terminate at.
+Arg 2 (optional) is a timestamp to terminate at.
+Returns a string containing the characters read.
+
+
+(sub)  ACLI_SetThrottle
+Sets the per-character throttling delay.
+Set this to zero to disable throttling.
+Arg 0 is the desired delay in milliseconds.
+No return value.
+
+
+(sub)  ACLI_QueryThrottle
+Queries the per-character throttling delay.
+No arguments.
+Returns the throttling delay in milliseconds (0 for no throttling).
+
+
+(sub)  ACLI_WriteSerial
+Writes a string to a serial port.
+If the throttle delay is nonzero, a delay occurs before each character is
+written.
+Arg 0 is the device handle to write to.
+Arg 1 is the string to write.
+No return value.
+
+
+(sub)  ACLI_GetTimeMicros
+Returns the current time in microseconds.
+FIXME - This requires 64-bit integers.
+No arguments.
+Returns an integer timestamp.
+
+
+(sub)  ACLI_AutoDetectSerialDevice
+This attempts to autodetect a serial device.
+No arguments.
+Returns the device name if successful or undef if not.
+
+
+(sub)  ACLI_SendProbeCommands
+Sends probe commands to the Arduino for the specified duration.
+Among other things this can be used to generate traffic to avoid
+deadlocking during initial handshaking.
+This returns immediately, with a child process doing the sending.
+NOTE - Command transmission is not MT-safe! Make sure nothing else is
+writing at the same time this is.
+Arg 0 is the serial handle to use.
+Arg 1 is the string to send to the arduino (including CRLF if needed).
+Arg 2 is the transmission interval in seconds.
+Arg 3 is the time() at which to terminate, or 0 to loop forever.
+Returns the PID of the child process.
+
+
+(sub)  ACLI_ConnectToArduino
+This initiates a serial link with an Arduino.
+This shouldn't _need_ traffic from the arduino, but it might still help.
+An optional keepalive command can be repeatedly sent to generate this.
+NOTE - This can also connect to executable emulated Arduino devices. If
+the baud rate is the string 'emulated', the "serial device" is assumed to
+be an executable filename and is run.
+Arg 0 is the serial device to use for the connection.
+Arg 1 is the baud rate to use.
+Arg 2 (optional) is a keepalive command to repeatedly send.
+Returns a communications handle (hash pointer).
+
+
+(sub)  ACLI_DisconnectArduino
+This shuts down connection with an Arduino.
+Arg 0 is the SerialPort device handle for this connection.
+No return value.
+
